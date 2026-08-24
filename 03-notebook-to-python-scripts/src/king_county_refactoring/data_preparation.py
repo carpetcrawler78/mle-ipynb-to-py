@@ -29,8 +29,9 @@ def bath_bed_ratio_outlier(df):
 
     # Work on a copy so callers keep their original DataFrame unchanged.
     df = df.copy()
-    # `np.nan` is referenced here so the starter keeps the NumPy import visibly relevant.
-    _ = np.nan
+    df["bath_bed_ratio"] = df["bathrooms"] / df["bedrooms"]
+    df = df[(df["bath_bed_ratio"] < 2) & (df["bath_bed_ratio"] > 0.10)]
+    df = df.drop(columns="bath_bed_ratio")
     return df
 
 
@@ -44,21 +45,27 @@ def sqft_basement(df):
 
     # Keep this function deterministic: same input DataFrame -> same cleaned output.
     df = df.copy()
+    df["sqft_basement"] = df["sqft_living"] - df["sqft_above"]
     return df
 
+def _get_year(yr):
+    return yr["yr_built"] if pd.isna(yr["yr_renovated"]) else yr["yr_renovated"]
 
 def calculate_last_change(df):
     # Exercise goal: Create `last_known_change` from `yr_renovated` and `yr_built`.
     # @TODO:
     # 1. Work on a DataFrame copy.
     # 2. If `yr_renovated` is missing or 0, use `yr_built`.
-    # 3. Otherwise use `yr_renovated` as integer.
     # 4. Create a new column named `last_known_change`.
     # 5. Drop `yr_renovated` and `yr_built` after creating the new column.
     # Reference solution: `03-notebook-to-python-scripts/src/king_county_refactoring/data_preparation_solution.py`.
 
-    # Copy first so this function behaves safely inside a preprocessing chain.
     df = df.copy()
+    yr_renovated = df["yr_renovated"]
+    df["last_known_change"] = yr_renovated.where(
+        yr_renovated.notna() & (yr_renovated != 0), df["yr_built"]
+    ).astype("int64")
+    df.drop(columns=["yr_renovated", "yr_built"], inplace=True)
     return df
 
 
@@ -73,6 +80,9 @@ def fill_missings_view_wf(df):
 
     # The output should keep the same columns as the input.
     df = df.copy()
+    df['view']=df['view'].fillna(0)
+    df['waterfront']=df['waterfront'].fillna(0)
+    
     return df
 
 
